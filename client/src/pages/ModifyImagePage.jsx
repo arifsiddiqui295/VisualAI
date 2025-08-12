@@ -1,17 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import NProgress from 'nprogress';
+import React, { useState, useEffect, useRef } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import useAxiosPrivate from '../api/axiosPrivate';
+import CircularProgress from '@mui/material/CircularProgress';
 import { useAuth } from '../context/AuthContext';
+import NProgress from "nprogress";
+import "nprogress/nprogress.css";
 export default function ModifyImagePage() {
   const axiosPrivate = useAxiosPrivate();
   const [uploadedImage, setUploadedImage] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
   const [prompt, setPrompt] = useState('');
+
   const [modifiedImage, setModifiedImage] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
+  const fileInputRef = useRef(null);
+
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -21,6 +26,7 @@ export default function ModifyImagePage() {
   };
 
   const handleModifyImage = async () => {
+    NProgress.start();
     if (!uploadedImage || !prompt) {
       toast.error("All fields are mandatory");
       return;
@@ -57,6 +63,7 @@ export default function ModifyImagePage() {
 
     } finally {
       setIsLoading(false);
+      NProgress.done();
     }
   };
   const postImage = async () => {
@@ -66,14 +73,15 @@ export default function ModifyImagePage() {
     }
 
     try {
+      NProgress.start();
       const src = previewImage;
       console.log("Posting modified image:");
 
       const res = await axiosPrivate.post('/images/uploadModifyImage', { src, user, prompt });
-      
+
       if (res.data?.success) {
+        navigate(`/profile/${user.username}`)
         toast.success("Image posted successfully!");
-        navigate(`/profile/${user.username}`);
       } else {
         toast.error(res.data?.message || "Failed to post image");
       }
@@ -88,6 +96,8 @@ export default function ModifyImagePage() {
       } else {
         toast.error("Unexpected error occurred");
       }
+    } finally {
+      NProgress.done();
     }
   };
 
@@ -96,6 +106,9 @@ export default function ModifyImagePage() {
     setPreviewImage('');
     setPrompt('');
     setModifiedImage('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   }
   useEffect(() => {
     // Stop NProgress if it was started on route change
@@ -120,6 +133,7 @@ export default function ModifyImagePage() {
             <input
               type="file"
               accept="image/*"
+              ref={fileInputRef}
               onChange={handleImageChange}
               className="mt-2 block w-full text-sm text-white bg-gray-700 border border-gray-600 rounded cursor-pointer focus:outline-none"
             />
@@ -147,7 +161,7 @@ export default function ModifyImagePage() {
               <button
                 onClick={uploadNewImage}
                 disabled={isLoading}
-                className="mt-6 w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 rounded transition duration-200 "
+                className="mt-6 w-full bg-teal-500 hover:bg-teal-600 text-white font-semibold py-2 rounded transition duration-200 "
               >
                 Upload new Image
               </button>
@@ -163,13 +177,22 @@ export default function ModifyImagePage() {
 
         {/* Right Side: Image Preview */}
         <div className="flex flex-col items-center justify-center bg-gray-800 p-6 rounded-lg shadow-lg min-h-[400px]">
-          {previewImage ? (
-            <img src={previewImage} alt="Uploaded preview" className="max-h-96 rounded shadow" />
+          {isLoading ? (
+            <div className='flex flex-col items-center justify-center gap-4 text-gray-300'>
+              <CircularProgress style={{ color: "inherit", width: "44px", height: "44px" }} />
+              <h1>Modifying Your Image . . .</h1>
+            </div>
           ) : (
-            <p className="text-gray-400 text-center">Upload an image and enter a prompt to preview here</p>
+
+            previewImage ? (
+              <img src={previewImage} alt="Uploaded preview" className="max-h-96 rounded shadow" />
+            ) : (
+              <p className="text-gray-400 text-center">Upload an image and enter a prompt to preview here</p>
+            )
           )}
+
         </div>
       </div>
-    </div>
+    </div >
   );
 }

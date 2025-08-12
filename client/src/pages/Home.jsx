@@ -9,69 +9,79 @@ import useAxiosPrivate from '../api/axiosPrivate';
 import { useAuth } from '../context/AuthContext';
 
 const Home = () => {
-    const [item, setItem] = useState('');
     const { user } = useAuth()
     const axiosPrivate = useAxiosPrivate();
+    const [generatedPosts, setGeneratedPosts] = useState([]);
+    const [modifiedPosts, setModifiedPosts] = useState([]);
+    const [filter, setFilter] = useState('generated'); // 'generated' or 'modified'
     useEffect(() => {
-        const getFeedPost = async () => {
+        const getPosts = async () => {
             try {
-                const response = await axios.get('/images/getFeedPost');
-                // console.log("Response = ", response.data.data);
-                const arr = response.data.data
-                arr.reverse()
-                setItem(arr); // if you want the response body
-            } catch (error) {
-                console.error('Error occurred while fetching feed posts:', error);
-                toast.error(error.message);
+                const generatedRes = await axios.get('/images/getFeedPost');
+                setGeneratedPosts(generatedRes.data.data);
+
+                const modifiedRes = await axios.get('/images/getModifedImage');
+                setModifiedPosts(modifiedRes.data.data);
+            } catch (err) {
+                console.error("Error fetching posts:", err);
             } finally {
                 NProgress.done(); // ✅ Stop loader after fetch
             }
         };
-        getFeedPost();
+        getPosts();
     }, []);
     const toggleLiked = async (postId) => {
-        const updatedPosts = item.map(post => {
+        if (!user) {
+            return (
+                toast.error("Only Logged in User can Like")
+            )
+        }
+        const isGenerated = filter === "generated";
+        const listToUpdate = isGenerated ? generatedPosts : modifiedPosts;
+        const setList = isGenerated ? setGeneratedPosts : setModifiedPosts;
+        const endpoint = isGenerated ? "/images/toggleLiked" : "/images/toggleModifiedLiked";
+        const updatedPosts = listToUpdate.map((post) => {
             if (post._id === postId) {
                 const alreadyLiked = post.like.includes(user?.username);
                 return {
                     ...post,
                     like: alreadyLiked
-                        ? post.like.filter(u => u !== user?.username)
-                        : [...post.like, user?.username]
+                        ? post.like.filter((u) => u !== user?.username)
+                        : [...post.like, user.username],
                 };
             }
             return post;
         });
 
-        //  Optimistically update UI
-        setItem(updatedPosts);
+        // Optimistic update
+        setList(updatedPosts);
 
         try {
-            const res = await axiosPrivate.post('/images/toggleLiked', {
+            await axiosPrivate.post(endpoint, {
                 postId,
-                profileUser: user.username
+                profileUser: user.username,
             });
-            // console.log("Toggle success:", res.data);
         } catch (err) {
-            //  Revert UI on error
-            toast.error("Only logged in users can like the posts");
+            toast.error("Failed to like. Please try again.");
 
-            const revertedPosts = item.map(post => {
+            // Revert changes if request fails
+            const revertedPosts = listToUpdate.map((post) => {
                 if (post._id === postId) {
-                    const alreadyLiked = post.like.includes(user?.username);
+                    const alreadyLiked = post.like.includes(user.username);
                     return {
                         ...post,
                         like: alreadyLiked
                             ? [...post.like, user.username]
-                            : post.like.filter(u => u !== user?.username)
+                            : post.like.filter((u) => u !== user.username),
                     };
                 }
                 return post;
             });
-
-            setItem(revertedPosts);
+            setList(revertedPosts);
         }
     };
+
+    const displayedPosts = filter === 'generated' ? generatedPosts : modifiedPosts;
     return (
         <div>
             <div className="h-full px-6 md:px-8 py-8 pb-16 bg-white dark:bg-gray-900 flex flex-col items-center gap-5">
@@ -80,16 +90,31 @@ const Home = () => {
                 {/* <Loader /> */}
 
                 <div className="text-[34px] font-semibold text-gray-900 dark:text-white flex flex-col items-center">
-                    Explore popular posts in the Community
+                    Discover posts shared within the community.
                     <div className="text-[30px] font-extrabold text-pink-600">
-                        ⦿ Genereted With AI ⦿
+                        ⦿ Genereted  And Modified With AI ⦿
                     </div>
                 </div>
-
+                <div className="flex  gap-4 mb-6">
+                    <button
+                        className={`px-4 py-2 rounded-full ${filter === 'generated' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-300'
+                            }`}
+                        onClick={() => setFilter('generated')}
+                    >
+                        Generated
+                    </button>
+                    <button
+                        className={`px-4 py-2 rounded-full ${filter === 'modified' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-300'
+                            }`}
+                        onClick={() => setFilter('modified')}
+                    >
+                        Modified
+                    </button>
+                </div>
                 {/* <SearchBar /> */}
 
                 <div className="grid justify-center items-center gap-8 xl:grid-cols-3 sm:grid-cols-2">
-                    {item && item.map((element) => (
+                    {displayedPosts && displayedPosts.map((element) => (
                         <article
                             key={element._id}
                             className="relative isolate flex flex-col justify-end overflow-hidden rounded-2xl pb-8 pt-36 sm:pt-40 md:pt-44 lg:pt-48 xl:pt-52 w-80 sm:w-96 mx-auto mt-8 sm:mt-14 mb-8 sm:mb-10 transition duration-300 transform hover:scale-105"

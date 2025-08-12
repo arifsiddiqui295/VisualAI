@@ -4,10 +4,11 @@ const User = require("../models/users");
 const { GoogleGenAI, Modality } = require("@google/genai");
 const fs = require("fs");
 const path = require("path");
+
 const ModifiedPost = require('../models/modifiedPosts');
 const createImage = async (req, res, next) => {
   const { prompt } = req.body;
-  console.log("prompt = ", prompt);
+  // console.log("prompt = ", prompt);
   if (!prompt) return res.status(400).json({ error: "Prompt is required" });
   const ai = new GoogleGenAI(process.env.GEMINI_API_KEY);
 
@@ -61,7 +62,7 @@ const uploadImageAndCreatePost = async (req, res) => {
     const { user, prompt, src } = req.body;
     // Upload image to Cloudinary
     const photoUrl = await cloudinary.uploader.upload(src);
-    console.log("Uploaded Photo URL:", photoUrl.url);
+    // console.log("Uploaded Photo URL:", photoUrl.url);
 
     // Create new post
     const newPost = new Post({
@@ -108,7 +109,7 @@ const getAllPosts = async (req, res) => {
   //   console.log("heh");
   try {
     const posts = await Post.find({});
-    console.log("All feed posts:", posts);
+    // console.log("All feed posts:", posts);
     res.status(200).json({ success: true, data: posts });
   } catch (error) {
     console.error("Error fetching feed posts:", error);

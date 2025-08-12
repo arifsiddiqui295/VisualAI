@@ -5,6 +5,8 @@ import useAxiosPrivate from '../api/axiosPrivate';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useAuth } from '../context/AuthContext'
+import NProgress from "nprogress";
+import "nprogress/nprogress.css";
 import { useNavigate } from 'react-router-dom';
 const GenerateImage = () => {
     const navigate = useNavigate();
@@ -42,10 +44,13 @@ const GenerateImage = () => {
     const postImage = async (e) => {
         console.log(src)
         try {
+            NProgress.start();
             const res = await axiosPrivate.post('/images/imagePost', { src, user, prompt });
             navigate(`/profile/${user.username}`)
         } catch (error) {
             console.log(error)
+        } finally {
+            NProgress.done(); // Stop progress bar when done
         }
     }
     return (

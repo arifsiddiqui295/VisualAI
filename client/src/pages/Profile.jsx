@@ -14,7 +14,6 @@ const Profile = () => {
     const axiosPrivate = useAxiosPrivate();
     const { user, setUser } = useAuth();
     const { username } = useParams();
-    const [userPosts, setUserPosts] = useState('');
     const [generatedPosts, setGeneratedPosts] = useState([]);
     const [modifiedPosts, setModifiedPosts] = useState([]);
     const [filter, setFilter] = useState('generated'); // 'generated' or 'modified'

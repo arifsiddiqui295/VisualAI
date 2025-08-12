@@ -40,7 +40,7 @@ const App = () => {
             headers: { Authorization: `Bearer ${newAccessToken}` },
           }
         );
-        console.log("userRes", userRes)
+        // console.log("userRes", userRes)
         setUser(userRes.data.user);
       } catch (err) {
         console.log("Session restore failed:", err?.response?.data || err.message);
