@@ -8,11 +8,14 @@ const {
   getUser,
 } = require("../controllers/userControllers");
 const router = express.Router(); // ✅ Correct usage
-router.get("/", function (req, res, next) {
-  // res.render("index", { title: "Express" });
-  res.json("ehelloworld");
-  // console.log("heheh");
+router.get('/', async (req, res) => {
+  try {
+    res.json("Hello World");
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
 });
+
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 router.post("/refresh", refreshToken);
